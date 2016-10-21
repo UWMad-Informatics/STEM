@@ -1,0 +1,14 @@
+#+LATEX_HEADER: \usepackage{graphicx}
+#+TITLE: STEM
+
+* Linear Regression 
+** Simple Linear Regression 10/15/16
+#+INCLUDE: "./notes/161015slr"
+* Data
+*** Convolution
+- 50 by 36 by 20
+- intensities = [0, 139.7768]
+
+*** Multislice
+- 50 by 36 by 20
+- intensities = [0, 0.1641]

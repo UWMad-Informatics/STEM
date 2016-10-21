@@ -1,0 +1,31 @@
+\[I.mult = \beta_1*(I.conv)+\beta_0\]
+For the initial model, I reduced the two data sets from 3D to 1D and
+performed linear regression with a bias term. The least squares
+estimates for intercept is 0 and slope is 0.0011319. 
+
+It is clear that relationship between the two image sets is not linear
+(see scatter plot with regression line). Also, there seems to be
+descrete "jumps" in the response variable that the linear model does
+not capture. I did not try cross-validation with the initial model.
+
+There are many ways to improve the model. First, I would build a model
+that imposes a restriction on the response variable. One example would
+be logistic transformation which will output in the range of [0,1]. We
+could then rescale the output to match the range of the Multislice
+image intensities.  
+
+ [[file:./images/slr.png]]
+
+Secondly, I would develop a feature set that has more explantory
+power. One natural way to start would be to include the dimensional
+indices as features to account for spatial correlation. However, this
+could be complicated as there seems to be clusters of high intensity
+pixels in the center and corners of the image. Either a kernel method
+or K-means method might be useful to account for spatially-clustered
+pixel intensities. Alternatively, we could perform segmentation on the
+different regions.
+
+Third, some form of piecewise model (i.e. Decision Trees) or
+locally-weighted models might better account for "jumps".
+
+- Python files: olr.py
