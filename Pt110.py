@@ -7,12 +7,15 @@ Created on Wed Sep 28 15:26:55 2016
 
 from scipy.io import loadmat
 from sklearn import linear_model
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import Ridge
 
 datafile1 = loadmat('Pt110-multislice-v0.mat')
 #print ("The object is of type:", type(datafile1))
 #print ("The keys of each value in the dictionary are...")
-for key in datafile1:
-    print(key)
+#for key in datafile1:
+ #   print(key)
 
 import numpy as np
 datafile2 = np.load('Pt110-convolution-v0.npy')
@@ -56,3 +59,9 @@ regression.fit(convolution_vector, multislice_vector)
 plt.scatter(convolution_vector, multislice_vector, color = 'black')
 plt.title('Convolution vs Multislice');
 plt.plot(convolution_vector, regression.predict(convolution_vector), color = 'blue')
+
+polyfit = make_pipeline(PolynomialFeatures(10), Ridge())
+polyfit.fit(convolution_vector, multislice_vector)
+plt.plot(convolution_vector, polyfit.predict(convolution_vector), color = 'red')
+
+plt.show()
