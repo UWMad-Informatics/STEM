@@ -1,4 +1,4 @@
-% Created 2016-10-21 Fri 13:48
+% Created 2016-11-04 Fri 13:47
 \documentclass[11pt]{article}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
@@ -27,12 +27,10 @@
 \begin{document}
 
 \maketitle
-\tableofcontents
-
 
 \section{Linear Regression}
 \label{sec-1}
-\subsection{Simple Linear Regression 10/15/16}
+\subsection{{\bfseries\sffamily DONE} Simple Linear Regression 10/15/16}
 \label{sec-1-1}
 \[I.mult = \beta_1*(I.conv)+\beta_0\]
 For the initial model, I reduced the two data sets from 3D to 1D and
@@ -67,6 +65,44 @@ locally-weighted models might better account for "jumps".
 \begin{itemize}
 \item Python files: olr.py
 \end{itemize}
+\pagebreak
+\subsection{Multiple Regression 10/30/16}
+\label{sec-1-2}
+For each layer, I generated a .png file with side by side images of
+convolution, multislice, and their difference (after
+normalization). These files are in data/images/ directory.  It looks
+like multislice images tend to be smoother than convolution images.
+
+I fit various multiple linear regression models using
+
+\begin{itemize}
+\item 1 pixel or 9 pixels (pixel and 8 neighbors)
+\item gradient direction/magnitude
+\item linear and quadratic predictors
+\end{itemize}
+
+The graphs below show the predicted outcome vs. observed (multiscale)
+intensity as a measure of model fit. It's clear that adding the
+quadratic term improves the model fit significantly. Gradient
+information doesn't seem to improve the model beyond the quadratic
+terms of the neighbor intensities. 
+
+I plan to perform cross-validation to compare these models. I also
+would like to experiment with applying smoothing filters to the
+convolution image. 
+\pagebreak
+
+\includegraphics[width=.9\linewidth]{./images/olr_order1_1pixel.png}\\
+\includegraphics[width=.9\linewidth]{./images/olr_order2_1pixel.png}\\
+\includegraphics[width=.9\linewidth]{./images/olr_order1_9pixel.png}\\
+\includegraphics[width=.9\linewidth]{./images/olr_order2_9pixel.png}\\
+\includegraphics[width=.9\linewidth]{./images/olr_order1_9pixel_grad.png}\\
+\includegraphics[width=.9\linewidth]{./images/olr_order2_9pixel_grad.png}\\
+
+\begin{itemize}
+\item Python files: olr2.py
+\end{itemize}
+\pagebreak
 \section{Data}
 \label{sec-2}
 \subsubsection{Convolution}

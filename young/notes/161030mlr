@@ -1,0 +1,32 @@
+For each layer, I generated a .png file with side by side images of
+convolution, multislice, and their difference (after
+normalization). These files are in data/images/ directory.  It looks
+like multislice images tend to be smoother than convolution images.
+
+I fit various multiple linear regression models using
+
+- 1 pixel or 9 pixels (pixel and 8 neighbors)
+- gradient direction/magnitude
+- linear and quadratic predictors
+
+The graphs below show the predicted outcome vs. observed (multiscale)
+intensity as a measure of model fit. It's clear that adding the
+quadratic term improves the model fit significantly. Gradient
+information doesn't seem to improve the model beyond the quadratic
+terms of the neighbor intensities. 
+
+I plan to perform cross-validation to compare these models. I also
+would like to experiment with applying smoothing filters to the
+convolution image. 
+\pagebreak
+
+[[file:./images/olr_order1_1pixel.png]]\\
+[[file:./images/olr_order2_1pixel.png]]\\
+[[file:./images/olr_order1_9pixel.png]]\\
+[[file:./images/olr_order2_9pixel.png]]\\
+[[file:./images/olr_order1_9pixel_grad.png]]\\
+[[file:./images/olr_order2_9pixel_grad.png]]\\
+
+- Python files: olr2.py
+
+
