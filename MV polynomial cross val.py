@@ -81,10 +81,10 @@ for m in range(1,100):
                 
     #Build vector of all slices excluding random indices
                 
-    X = []
+    X_train = []
     allX = []
-    mstofit = []
-    mstofitall = []
+    ms_train = []
+    ms_all = []
     removed = 0
     
     for k in range (0, shape[2]-1):
@@ -97,7 +97,7 @@ for m in range(1,100):
                 allX.append([data[i][j][k], data[i+1][j][k], data[i][j+1][k], 
                       data[i-1][j][k], data[i][j-1][k], data[i+1][j+1][k], 
                       data[i+1][j-1][k], data[i-1][j+1][k], data[i-1][j-1][k]])
-                mstofitall.append(multislice_data[i][j][k])  
+                ms_all.append(multislice_data[i][j][k])  
                 
                 #vector with selected indices removed
                 while(n < numremove and out == False):
@@ -106,22 +106,22 @@ for m in range(1,100):
                         removed = removed + 1
                     n = n + 1
                 if out == False:
-                    X.append([data[i][j][k], data[i+1][j][k], data[i][j+1][k], 
+                    X_train.append([data[i][j][k], data[i+1][j][k], data[i][j+1][k], 
                       data[i-1][j][k], data[i][j-1][k], data[i+1][j+1][k], 
                       data[i+1][j-1][k], data[i-1][j+1][k], data[i-1][j-1][k]])
-                    mstofit.append(multislice_data[i][j][k])
+                    ms_train.append(multislice_data[i][j][k])
            
     #Multivariate Polynomial Model
     
     poly = PolynomialFeatures(degree=4)
     
     #transforms data to polynomial representation necessary for desired degree
-    Xtransform = poly.fit_transform(X)
+    Xtransform = poly.fit_transform(X_train)
     allXtransform = poly.fit_transform(allX)
     
     #fits model using data of reduced vector
     polymvreg = linear_model.LinearRegression()
-    polymvreg.fit(Xtransform, mstofit)
+    polymvreg.fit(Xtransform, ms_train)
     
     #predicts all points using model
     predicted = polymvreg.predict(allXtransform)
@@ -135,7 +135,7 @@ for m in range(1,100):
 #    plt.show()
     
     #root mean square
-    rms.append(sqrt(mean(square(predicted - mstofitall))))
+    rms.append(sqrt(mean(square(predicted - ms_all))))
     
 avrms = np.average(rms)
 stddev = np.std(rms)
