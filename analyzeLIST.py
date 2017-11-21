@@ -137,7 +137,7 @@ def slicedifcompare(difimage, actualimage, slicetoshow, save):
     return
 
 def difzoomcompare(difimage, actualimage, slicetoshow, rep, fold, number, model, frac, 
-                   dn, deg, inputs, showzoom=False, shownozoom=False, save,
+                   dn, deg, inputs, showzoom=False, shownozoom=False, save=True,
                    maxcolor1=None, mincolor1=None):
     plt.close('all')
     frac = round(frac*100)
@@ -162,8 +162,13 @@ def difzoomcompare(difimage, actualimage, slicetoshow, rep, fold, number, model,
     n = 1
     if dn == 1:
         fig = plt.figure(figsize=(10,3))
+        dname = 'Pt'
     if dn == 3 or dn == 4:
         fig = plt.figure(figsize=(11.5,3))
+        if dn==3:
+            dname = 'Pt'
+        else:
+            dname = 'PtMo 5%'
     ax1 = fig.add_subplot(1,totalplts,n)
     tickrange = np.linspace(mincolor1, maxcolor1, num=5)
     fig.colorbar(ax1.pcolormesh(actualimage, cmap = cm.viridis, vmin=mincolor1, 
@@ -173,7 +178,7 @@ def difzoomcompare(difimage, actualimage, slicetoshow, rep, fold, number, model,
     ax1.set_ylim(0, difimage.shape[0])
     ax1.set_xlabel('Actual', size = 11)
 #    plt.title('Actual', size = 11)
-    plt.suptitle('Data='+str(dn)+', degree='+str(deg)+', inputs='+str(inputs)
+    plt.suptitle(dname+', degree='+str(deg)+', inputs='+str(inputs)
                 +', model='+str(model)+', '+str(frac)+'% out, slice='
                 +str(slicetoshow))
         
@@ -187,7 +192,7 @@ def difzoomcompare(difimage, actualimage, slicetoshow, rep, fold, number, model,
         ax2.set_aspect('equal', 'box')
         ax2.set_xlim(0, difimage.shape[1])
         ax2.set_ylim(0, difimage.shape[0])
-        ax2.set_xlabel('Differences (orig scale)', size = 11)
+        ax2.set_xlabel('Differences (large scale)', size = 11)
 #        plt.title('Differences (orig scale)', size = 11)         
         
     #plots differences (with zoom)
@@ -200,12 +205,134 @@ def difzoomcompare(difimage, actualimage, slicetoshow, rep, fold, number, model,
         ax2.set_aspect('equal', 'box')
         ax2.set_xlim(0, difimage.shape[1])
         ax2.set_ylim(0, difimage.shape[0])
-        ax2.set_xlabel('Differences (zoom scale)', size = 11)
+        ax2.set_xlabel('Differences (reduced scale)', size = 11)
 #        plt.title('Differences (zoom scale)', size = 11)
         
 
     if save:
-        saveplot('dif_dn'+str(dn)+'n'+str(number)+'_r'+str(rep)+'_f'+str(fold)+'_s'+str(slicetoshow))
+        saveplot('d_dn'+str(dn)+'_n'+str(number)+'_r'+str(rep)+'_f'+str(fold)+'_s'+str(slicetoshow))
+    else:
+        plt.show() 
+ 
+#can print up to 4 images in one figure: actual, predicted, difference (actual 
+#scale), difference (small scale)       
+def sliceimages(difimage, actualimage, predimage, slicetoshow, rep, fold, number, 
+                model, frac, dn, deg, inputs, showpred=False, showzoom=False, 
+                shownozoom=False, save=True, maxcolor1=None, mincolor1=None):
+    plt.close('all')
+    frac = round(frac*100)
+    
+    if maxcolor1 == None:
+        maxcolor1 = max([np.amax(actualimage), np.amax(predimage)])
+    if mincolor1 == None:
+        mincolor1 = 0
+        
+    if showzoom:
+        maxcolor2 = np.amax(difimage)
+        mincolor2 = np.amin(difimage)
+    
+    totalplts = 1
+    if showpred:
+        totalplts += 1
+    if showzoom:
+        totalplts += 1
+    if shownozoom:
+        totalplts += 1
+        
+    if dn == 1 or dn == 3:
+        dname = 'Pt'
+    elif dn == 4:
+        dname = 'PtMo 5%'
+        
+    #sets figure (size based on number of plots total)
+    n = 1
+    if totalplts == 1:
+        gridrow = 1
+        gridcol = 1
+        if dn == 1:
+            fig = plt.figure(figsize=(3,3))
+        if dn == 3 or dn == 4:
+            fig = plt.figure(figsize=(4,4.5))
+
+    elif totalplts == 2:
+        gridrow = 1
+        gridcol = 2
+        if dn == 1:
+            fig = plt.figure(figsize=(5,3))
+        if dn == 3 or dn == 4:
+            fig = plt.figure(figsize=(10,3.5))
+
+    elif totalplts == 3:
+        gridrow = 2
+        gridcol = 2
+        if dn == 1:
+            fig = plt.figure(figsize=(10,8))
+        if dn == 3 or dn == 4:
+            fig = plt.figure(figsize=(10,8))
+
+    elif totalplts == 4:
+        gridrow = 2
+        gridcol = 2
+        if dn == 1:
+            fig = plt.figure(figsize=(10,8))
+        if dn == 3 or dn == 4:
+            fig = plt.figure(figsize=(10,8))
+     
+    #plots actual (plot always included)           
+    ax1 = fig.add_subplot(gridrow,gridcol,n)
+    tickrange = np.linspace(mincolor1, maxcolor1, num=5)
+    fig.colorbar(ax1.pcolormesh(actualimage, cmap = cm.viridis, vmin=mincolor1, 
+                                vmax=maxcolor1), ticks=tickrange)
+    ax1.set_aspect('equal', 'box')
+    ax1.set_xlim(0, difimage.shape[1])
+    ax1.set_ylim(0, difimage.shape[0])
+    ax1.set_xlabel('Actual', size = 11)
+#    plt.title('Actual', size = 11)
+    plt.suptitle(dname+', degree '+str(deg)+', inputs '+str(inputs)
+                +', model '+str(model)+', '+str(frac)+'% out, slice '
+                +str(slicetoshow))
+
+    #plots the predicted image    
+    if showpred:
+        n = n + 1
+        tickrange = np.linspace(mincolor1, maxcolor1, num=5)
+        ax2 = fig.add_subplot(gridrow,gridcol,n)
+        fig.colorbar(ax2.pcolormesh(predimage, cmap = cm.viridis, vmin=mincolor1, 
+                                    vmax=maxcolor1), ticks=tickrange)
+        ax2.set_aspect('equal', 'box')
+        ax2.set_xlim(0, predimage.shape[1])
+        ax2.set_ylim(0, predimage.shape[0])
+        ax2.set_xlabel('Predicted', size = 11)
+
+    #plots differences (no zoom)
+    if shownozoom:
+        n = n + 1
+        tickrange = np.linspace(mincolor1, maxcolor1, num=5)
+        ax2 = fig.add_subplot(gridrow,gridcol,n)
+        fig.colorbar(ax2.pcolormesh(difimage, cmap = cm.viridis, vmin=mincolor1, 
+                                    vmax=maxcolor1), ticks=tickrange)
+        ax2.set_aspect('equal', 'box')
+        ax2.set_xlim(0, difimage.shape[1])
+        ax2.set_ylim(0, difimage.shape[0])
+        ax2.set_xlabel('Differences (large scale)', size = 11)
+#        plt.title('Differences (orig scale)', size = 11)         
+        
+    #plots differences (with zoom)
+    if showzoom:
+        n = n + 1
+        tickrange = np.linspace(mincolor2, maxcolor2, num=5)
+        ax2 = fig.add_subplot(gridrow,gridcol,n)
+        fig.colorbar(ax2.pcolormesh(difimage, cmap = cm.viridis, vmin=mincolor2, 
+                                    vmax=maxcolor2), ticks=tickrange)
+        ax2.set_aspect('equal', 'box')
+        ax2.set_xlim(0, difimage.shape[1])
+        ax2.set_ylim(0, difimage.shape[0])
+        ax2.set_xlabel('Differences (reduced scale)', size = 11)
+#        plt.title('Differences (zoom scale)', size = 11)
+        
+
+    if save:
+        saveplot('d_dn'+str(dn)+'_n'+str(number)+'_r'+str(rep)+'_f'+str(fold)+'_s'+str(slicetoshow))
     else:
         plt.show() 
 
@@ -247,14 +374,15 @@ def difzoom(difimage, save=False, maxcolor=None, mincolor=None, slicetoshow=None
     return
 
 #creates a parity plot using all test data
-def allparity(predicted, ms_test, rep, fold, number, model, frac, dn, deg, inputs, save):
+def allparity(predicted, ms_test, number, model, frac, dn, deg, inputs, save):
     plt.close('all')
     frac = round(frac*100)
-    overallmax = max(np.amax(predicted), np.amax(ms_test))
+#    overallmax = max(np.amax(predicted), np.amax(ms_test))
     fig = plt.figure(figsize=(5,5))
     ax = fig.add_subplot(1,1,1)
-    plt.scatter(predicted, ms_test)
-    plt.plot([0,overallmax], [0,overallmax], color = 'r', linestyle = '-')
+    plt.plot(predicted, ms_test, 'k,')
+#    plt.plot([0,overallmax], [0,overallmax], color = 'r', linestyle = '-')
+    plt.plot([0,.2], [0,.2], color = 'r', linestyle = '-')
     plt.title('Data='+str(dn)+', degree='+str(deg)+', inputs='+str(inputs)
                 +', model='+str(model)+', '+str(frac)+'% out parity plot')
     plt.xlabel('Predicted')
@@ -262,7 +390,7 @@ def allparity(predicted, ms_test, rep, fold, number, model, frac, dn, deg, input
     plt.tight_layout() 
         
     if save:
-        saveplot('par_dn'+str(dn)+'_n'+str(number)+'_r'+str(rep)+'_f'+str(fold))
+        saveplot('p_dn'+str(dn)+'_n'+str(number))
     else:
         plt.show() 
         
@@ -368,6 +496,7 @@ def getimages(predicted, ms_data_trimmed, slicestoshow, shapes, inputs):
     trimrows = math.floor(np.sqrt(inputs)/2)
     difimagelist = []
     actualimagelist = []
+    predictedimagelist = []
     
     #rearrange vector into array
     for n in range(len(slicestoshow)):
@@ -383,8 +512,33 @@ def getimages(predicted, ms_data_trimmed, slicestoshow, shapes, inputs):
         
         difimagelist.append(difimage)
         actualimagelist.append(actualimage)
+        predictedimagelist.append(predictedimage)
         
-    return difimagelist, actualimagelist
+    return difimagelist, actualimagelist, predictedimagelist
+
+def getslicevectors(predicted, ms_data_trimmed, slicestoshow, shapes, inputs):
+    trimrows = math.floor(np.sqrt(inputs)/2)
+    difvectorlist = []
+    actualvectorlist = []
+    predictedvectorlist = []
+    
+    #rearrange vector into array
+    for n in range(len(slicestoshow)):
+        shape = shapes[n]
+        elements = (shape[0]-2*trimrows)*(shape[1]-2*trimrows)
+        predictedvector = np.ravel(predicted[0:elements])
+        actualvector = np.ravel(ms_data_trimmed[0:elements])
+        predicted = np.delete(predicted, range(elements))
+        ms_data_trimmed = np.delete(ms_data_trimmed, range(elements))
+        
+        #obtain difference array
+        difvector = predictedvector - actualvector
+        
+        difvectorlist.append(difvector)
+        actualvectorlist.append(actualvector)
+        predictedvectorlist.append(predictedvector)
+        
+    return difvectorlist, actualvectorlist, predictedvectorlist
 
 #saves the plot to a timestamped folder
 def saveplot(name):

@@ -85,7 +85,7 @@ def predict(X_test, deg, inputs, model, modeltype):
         start = timer()
         predicted = model.predict(x, transform=False)
         end = timer()
-        time = end - start   
+        time = (end - start)/len(predicted)   
         
     if modeltype == 2 or modeltype == 7:
         poly = PolynomialFeatures(degree = deg)
@@ -95,13 +95,13 @@ def predict(X_test, deg, inputs, model, modeltype):
         start = timer()
         predicted = model.predict(X_test_transform)
         end = timer()
-        time = end - start
+        time = (end - start)/len(predicted)
         
     elif modeltype == 3 or modeltype == 4 or modeltype == 5:
         start = timer()
         predicted = model.predict(X_test)
         end= timer()
-        time = end - start
+        time = (end - start)/len(predicted)
         
     return predicted, time
 

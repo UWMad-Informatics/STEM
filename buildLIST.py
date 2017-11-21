@@ -829,7 +829,7 @@ def findtermnums(deg, inputs, modeltype):
     elif modeltype == 6:
         crossterms = False
         logterm = True
-        terms = inputs * deg + 2
+        terms = (inputs + 1) * deg + 1
     elif modeltype == 7:
         crossterms = True
         logterm = True

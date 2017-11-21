@@ -14,6 +14,7 @@ import pandas as pd
 from datetime import datetime
 from scipy.io import loadmat
 from PIL import Image
+from sklearn.metrics import r2_score
 
 def stemrun(datanumber, fracin, deg, inputs, crossvaltype, blocksize, 
             modeltype, repeats, name, blurring, save, number):
@@ -43,6 +44,8 @@ def stemrun(datanumber, fracin, deg, inputs, crossvaltype, blocksize,
     
     #Runs all model variations and adds results to a dataframe. Writes result 
     #to a CSV file.
+    number = number[0]
+    
     for datanum in datanumber:   
         if datanum == 1:
             datafile1 = loadmat('Pt110-multislice-v0.mat')['ImgG']
@@ -124,13 +127,14 @@ def stemrun(datanumber, fracin, deg, inputs, crossvaltype, blocksize,
         merror = []
         rms = []
         
-        c = ['number','fractionin','testcen','traincen','outnum','degree','inputs','terms', 
-        'blocksize','valtype','modeltype','time','timesd','maepct','mepct','rmspct', 
-        'maepctsem','mepctsem','rmspctsem','mae','me','rms','maesem','mesem','rmssem']
+        c = ['number','fractionin','testcen','traincen','outnum','alltestnum','degree','inputs','terms', 
+        'blocksize','valtype','modeltype','timeperpixel','timesd','maepct','mepct','rmspct', 
+        'maepctsem','mepctsem','mae','me','rms','maesem','mesem', 'pctimp','1-r^2','amorphrms', 
+        'mixrms', 'xtalrms', 'amorph1-r^2', 'mix1-r^2', 'xtal1-r^2']
         
         result = pd.DataFrame(columns = c)
         
-        currrow = 0
+#        currrow = 0
         
         for fi in fracin:
             for d in deg:
@@ -141,6 +145,7 @@ def stemrun(datanumber, fracin, deg, inputs, crossvaltype, blocksize,
                                 for r in repeats:
                                     if blurring in (True, 'True'):
                                         conv_data = buildLIST.blur(conv_data)
+                                        
                                     terms = buildLIST.findtermnums(d, inp, mt)
                                     pctmaerror = []
                                     pctmerror = []
@@ -148,144 +153,176 @@ def stemrun(datanumber, fracin, deg, inputs, crossvaltype, blocksize,
                                     maerror = []
                                     merror = []
                                     rms = []
-                                    pctmaemean = []
-                                    pctmemean = []
-                                    pctrmsmean = []
-                                    maemean = []
-                                    memean = []
-                                    rmsmean = []
-                                    converror = []
+                                    origerror = []
+                                    allpredicted = []
+                                    allmstest = []
+                                    allxtest = []
+                                    allmerror = []
+                                    allmaerror = []
+                                    allnum = 0
                                     timevec = []
+                                    amorphrms = []
+                                    mixedrms = []
+                                    xtalrms= []
+                                    amorphrsq = []
+                                    mixedrsq = []
+                                    xtalrsq = []
                                         
                                     for rep in range(r): 
                                         modellist, xtestlist, mstestlist, slinflist, traincen, testcen, outnum = buildLIST.modelkfold(ms_data, 
                                                 conv_data, d, inp, mt, cvt, fi, blk)
+                                        
                                         i = 0
-                                        pctmaecurr = []
-                                        pctmecurr = []
-                                        pctrmscurr = []
-                                        maecurr = []
-                                        mecurr = []
-                                        rmscurr = []
                                         k = 0
                                         l = 0
+                                        sliceerror = []
                                         for model in modellist:
                                             X_test = xtestlist[i]
                                             ms_test = mstestlist[i]
                                         
                                             predicted, time = traintestLIST.predict(X_test, d, inp, 
                                                                               model, mt)
-                                            #CREATE PLOT(S) HERE
-                                            #if slicewise cross val, create difference plots
+                                            
+                                            allpredicted.extend(predicted)
+                                            allmstest.extend(ms_test)
+                                            allxtest.extend(X_test)
+                                        
+                                            allnum = allnum + len(predicted)
+                                            
+                                            timevec.append(time/len(predicted))
+                                            
+                                            #If slicewise cross val, create difference plots and 
+                                            #find the error statistics for the different particle 
+                                            #categories
                                             if (cvt == 5 or cvt == 1) and save == True:
                                                 slicesinfolds = slinflist[i]
+                                                inorderslices = []
                                                 shapes = []
-                                                for s in slicesinfolds:
-                                                    shapes.append(ms_data[s].shape)
-                                                difimagelist, actualimagelist = analyzeLIST.getimages(predicted, 
+                                                totalslices = len(ms_data)
+                                                for s in range(totalslices):
+                                                    if s in slicesinfolds:
+                                                        shapes.append(ms_data[s].shape)
+                                                        inorderslices.append(s)
+                                        
+                                                difvectorlist, actualvectorlist, predictedvectorlist = analyzeLIST.getslicevectors(predicted, 
                                                                                                       ms_test, 
                                                                                                       slicesinfolds, 
                                                                                                       shapes, 
-                                                                                                      inputs)
+                                                                                                      inp)
+                
+                                                difimagelist, actualimagelist, predictedimagelist = analyzeLIST.getimages(predicted, 
+                                                                                                      ms_test, 
+                                                                                                      slicesinfolds, 
+                                                                                                      shapes, 
+                                                                                                      inp)
+                                                
+                                                
                                                 for j in range(len(slicesinfolds)):
                                                     k = k+1
+                                                    actualvector = actualvectorlist[j]
+                                                    predvector = predictedvectorlist[j]
+                                                    rmserrorval = analyzeLIST.geterror(3, True, predvector, actualvector)
+                                                    rsquareval = 1 - r2_score(actualvector, predvector)
+                                                    sliceout = slicesinfolds[j]
+                                                    
+                                                    if datanum == 3:
+                                                        if sliceout in [0,1,2,4,5,7,8]:
+                                                            amorphrms.append(rmserrorval)
+                                                            amorphrsq.append(rsquareval)
+                                                        elif sliceout in [9,10,11,12,13,14]:
+                                                            mixedrms.append(rmserrorval)
+                                                            mixedrsq.append(rsquareval)
+                                                        elif sliceout in [3,6,15,16,17,18,19]:
+                                                            xtalrms.append(rmserrorval)
+                                                            xtalrsq.append(rsquareval) 
+                                                            
+                                                    if datanum == 4:
+                                                        if sliceout in [0,1,3,4,5,16,19]:
+                                                            amorphrms.append(rmserrorval)
+                                                            amorphrsq.append(rsquareval)
+                                                        elif sliceout in [6,7,8,9,10,11]:
+                                                            mixedrms.append(rmserrorval)
+                                                            mixedrsq.append(rsquareval)
+                                                        elif sliceout in [2,12,13,14,15,17,18]:
+                                                            xtalrms.append(rmserrorval)
+                                                            xtalrsq.append(rsquareval) 
+                                                            
                                                     difimage = difimagelist[j]
                                                     actualimage = actualimagelist[j]
-                                                    analyzeLIST.difzoomcompare(difimage, actualimage, 
-                                                                                slicesinfolds[j], 
+                                                    predimage = predictedimagelist[j]
+                                                    analyzeLIST.sliceimages(difimage, actualimage, 
+                                                                                predimage,
+                                                                                inorderslices[j], 
                                                                                 rep=rep, fold=k, 
                                                                                 number=number,
                                                                                 model=mt, frac=1-fi, 
                                                                                 dn=datanum,
                                                                                 deg=d, inputs=inp,
+                                                                                showpred=True,
                                                                                 showzoom=True, 
                                                                                 shownozoom=True, 
                                                                                 save=save)
-                                        
-                                            #Create parity plots (for all cross val types)--for all test data
-                                            l = l+1
-                                            analyzeLIST.allparity(predicted, ms_test, 
-                                                                  rep=rep, fold=l, 
-                                                                  number=number, 
-                                                                  model=mt, frac=1-fi, 
-                                                                  dn=datanum, deg=d, 
-                                                                  inputs=inp, save=True)
+                                                    
+                                           #If this is not slicewise cross validation, use placeholder
+                                           #values for the image type error
+                                            elif (cvt!=5 and cvt!=1):
+                                                amorphrms.append(-1)
+                                                amorphrsq.append(-1)
+                                                mixedrms.append(-1)
+                                                mixedrsq.append(-1)
+                                                xtalrms.append(-1)
+                                                xtalrsq.append(-1)
+                                                
+                                            i = i + 1
                                             
-                                            timevec.append(time)
-                                            converrorval = np.mean(X_test-ms_test)
-                                            converror.append(converrorval)
-                                            pct = True
-                                            pctmaecurr.append(analyzeLIST.geterror(1, pct, predicted, ms_test))
-                                            pctmecurr.append(analyzeLIST.geterror(2, pct, predicted, ms_test))
-                                            pctrmscurr.append(analyzeLIST.geterror(3, pct, predicted, ms_test))
-                                            pct = False
-                                            maconvval = analyzeLIST.geterror(1, pct, predicted, ms_test)
-                                            mconvval = analyzeLIST.geterror(2, pct, predicted, ms_test)
-                                            rmsconvval = analyzeLIST.geterror(3, pct, predicted, ms_test)
-                                            maecurr.append(maconvval)
-                                            mecurr.append(mconvval)
-                                            rmscurr.append(rmsconvval)
-                                            i = i + 1 
-                                        
-                                        pctmaemean.append(np.mean(pctmaecurr))
-                                        pctmemean.append(np.mean(pctmecurr))
-                                        pctrmsmean.append(np.mean(rmscurr))
-                                        maemean.append(np.mean(maecurr))
-                                        memean.append(np.mean(mecurr))
-                                        rmsmean.append(np.mean(rmscurr))
-                                        
-                                        pctmaerror.append(pctmaecurr)
-                                        pctmerror.append(pctmecurr)
-                                        pctrms.append(pctrmscurr)
-                                        maerror.append(maecurr)
-                                        merror.append(mecurr)
-                                        rms.append(rmscurr)
-                                        
-                                        root = np.sqrt(r)
-                                     
-                                    thisrow = np.array([[number, fi, testcen, traincen, outnum, d, 
-                                                         inp, terms, blk, cvt,
-                                                         mt, np.mean(timevec), np.std(timevec), 
-                                                        np.mean(pctmaerror), np.mean(pctmerror), 
-                                                        np.mean(pctrms), np.std(pctmaemean)/root, 
-                                                        np.std(pctmemean)/root, np.std(pctrmsmean)/root,
-                                                        np.mean(maerror), np.mean(merror), 
-                                                        np.mean(rms), np.std(maemean)/root, 
-                                                        np.std(memean)/root, np.std(rmsmean)/root]])
-                                    thisrowdf = pd.DataFrame(data = thisrow, columns = c)
-                                    result = result.append(thisrowdf, ignore_index = True)
-            
-                                    currrow = currrow + 1
+                                #Create parity plots (for all cross val types)--for all test data
+                                analyzeLIST.allparity(allpredicted, allmstest, 
+                                                      number=number, 
+                                                      model=mt, frac=1-fi, 
+                                                      dn=datanum, deg=d, 
+                                                      inputs=inp, save=save)
+                                    
+                                for n in range(allnum):
+                                    allmerror.append(allpredicted[n]-allmstest[n])
+                                    allmaerror.append(abs(allpredicted[n]-allmstest[n]))
+                                stdmerror = np.std(allmerror)/np.sqrt(allnum)
+                                stdmaerror = np.std(allmaerror)/np.sqrt(allnum)
+                                stdpctmerror = np.std(allmerror*100/np.mean(allmstest))/np.sqrt(allnum)
+                                stdpctmaerror = np.std(allmaerror*100/np.mean(allmstest))/np.sqrt(allnum)
+                                origerror = analyzeLIST.geterror(3, False, allxtest, allmstest)
+                                rms = analyzeLIST.geterror(3, False, allpredicted, allmstest)
+                                maerror = analyzeLIST.geterror(1, False, allpredicted, allmstest)
+                                merror = analyzeLIST.geterror(2, False, allpredicted, allmstest)
+                                pctrms = analyzeLIST.geterror(3, True, allpredicted, allmstest)
+                                pctmaerror = analyzeLIST.geterror(1, True, allpredicted, allmstest)
+                                pctmerror = analyzeLIST.geterror(2, True, allpredicted, allmstest)
+                                amrms = np.mean(amorphrms)
+                                mixrms = np.mean(mixedrms)
+                                xrms = np.mean(xtalrms)
+                                amrsq = np.mean(amorphrsq)
+                                mixrsq = np.mean(mixedrsq)
+                                xrsq = np.mean(xtalrsq)
+                                r_squared = r2_score(allmstest, allpredicted)
+                                
+                                thisrow = np.array([[number, fi, testcen, traincen, outnum, allnum, 
+                                                     d, inp, terms, blk, cvt,
+                                                     mt, np.mean(timevec), np.std(timevec), 
+                                                    np.mean(pctmaerror), np.mean(pctmerror), 
+                                                    np.mean(pctrms), stdpctmaerror, 
+                                                    stdpctmerror, 
+                                                    np.mean(maerror), np.mean(merror), 
+                                                    np.mean(rms), stdmaerror, 
+                                                    stdmerror, 1-rms/origerror, 1-r_squared, 
+                                                    amrms, mixrms, xrms, amrsq, mixrsq, xrsq]])
+                                thisrowdf = pd.DataFrame(data = thisrow, columns = c)
+                                result = result.append(thisrowdf, ignore_index = True)
+        
+#                                currrow = currrow + 1
                     
-                    if save in (True, 'True'):
-                        date = datetime.now()
-    #                    folderdate = date.strftime('%Y-%m-%d_data')
-    #                    analyzeLIST.mkdir_p(folderdate)
-                        filedate = date.strftime(name+'_'+str(number)+'_%Y-%m-%d_%H;%M;%S')
-                        result.to_csv(filedate + '.csv', header = False, index = False)
-    #have not updated plots to plot error histograms of model error/conv error fraction                        
-    #                        analyze.errorhist(maerror, 'auto', min(maerror), max(maerror), False, 
-    #                                            modeltype, crossvaltype, 1, 
-    #                                            fracin, deg, inputs)
-    #                        analyze.errorhist(merror, 'auto', min(merror), max(merror), False, 
-    #                                            modeltype, crossvaltype, 2, 
-    #                                            fracin, deg, inputs)
-    #                        analyze.errorhist(rms, 'auto', min(rms), max(rms), False, 
-    #                                            modeltype, crossvaltype, 3, 
-    #                                            fracin, deg, inputs)
-    
-    #date = datetime.now()
-    #name = 'polyblur'
-    #folderdate = date.strftime('%Y-%m-%d_data')
-    #stemplots.mkdir_p(folderdate)
-    #filedate = date.strftime('%Y-%m-%d_%H%M_' + name)
-    #
-    #result.to_csv(folderdate + '/' + filedate + '.csv', header = True, index = False)
-    
-    #analyze.errorhist(error, 'auto', min(error), max(error), True, modeltype, crossvaltype, 
-    #                    errortype, fractionout, deg, inputs, alpha)
-    #print('Cross val type: ' + str(crossvaltype) + '\nModeltype: ' + str(modeltype) + 
-    #'\nInputs: ' + str(inputs) + '\nDegree: ' + str(deg))
-    #print('Average percent mean absolute error (type ' + str(errortype) + '): ' + str(np.mean(error)))
-    #print('Standard deviation: ' + str(np.std(error)))
+        if save in (True, 'True'):
+            date = datetime.now()
+#                    folderdate = date.strftime('%Y-%m-%d_data')
+#                    analyzeLIST.mkdir_p(folderdate)
+            filedate = date.strftime(name+'_'+str(number)+'_%Y-%m-%d_%H;%M;%S')
+            result.to_csv(filedate + '.csv', header = False, index = False)
     return result
